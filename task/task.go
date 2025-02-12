@@ -15,16 +15,6 @@ import (
 	"github.com/moby/moby/pkg/stdcopy"
 )
 
-type State int
-
-const (
-	Pending State = iota
-	Scheduled
-	Running
-	Completed
-	Failed
-)
-
 // Config struct to hold Docker container config
 type Config struct {
 	Name         string
