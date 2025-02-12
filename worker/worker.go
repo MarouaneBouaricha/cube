@@ -22,6 +22,10 @@ func (w *Worker) CollectStats() {
 	fmt.Println("I will collect stats")
 }
 
+func (w *Worker) AddTask(t task.Task) {
+	w.Queue.Enqueue(t)
+}
+
 func (w *Worker) RunTask() task.DockerResult {
 	t := w.Queue.Dequeue()
 	if t == nil {
