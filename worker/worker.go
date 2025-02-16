@@ -19,15 +19,6 @@ type Worker struct {
 	TaskCount int
 }
 
-func (w *Worker) CollectStats() {
-	for {
-		log.Println("Collecting stats")
-		w.Stats = GetStats()
-		w.Stats.TaskCount = w.TaskCount
-		time.Sleep(15 * time.Second)
-	}
-}
-
 func (w *Worker) GetTasks() []*task.Task {
 	tasks := []*task.Task{}
 	for _, t := range w.Db {
@@ -36,11 +27,36 @@ func (w *Worker) GetTasks() []*task.Task {
 	return tasks
 }
 
+func (w *Worker) CollectStats() {
+	for {
+		log.Println("Collecting stats")
+		w.Stats = GetStats()
+		w.TaskCount = w.Stats.TaskCount
+		time.Sleep(15 * time.Second)
+	}
+}
+
 func (w *Worker) AddTask(t task.Task) {
 	w.Queue.Enqueue(t)
 }
 
-func (w *Worker) RunTask() task.DockerResult {
+func (w *Worker) RunTasks() {
+	for {
+		if w.Queue.Len() != 0 {
+			result := w.runTask()
+			if result.Error != nil {
+				log.Printf("Error running task: %v\n", result.Error)
+			}
+		} else {
+			log.Printf("No tasks to process currently.\n")
+		}
+		log.Println("Sleeping for 10 seconds.")
+		time.Sleep(10 * time.Second)
+	}
+
+}
+
+func (w *Worker) runTask() task.DockerResult {
 	t := w.Queue.Dequeue()
 	if t == nil {
 		log.Println("No tasks in the queue")
@@ -48,6 +64,7 @@ func (w *Worker) RunTask() task.DockerResult {
 	}
 
 	taskQueued := t.(task.Task)
+	fmt.Printf("Found task in queue: %v:\n", taskQueued)
 
 	taskPersisted := w.Db[taskQueued.ID]
 	if taskPersisted == nil {
@@ -63,6 +80,7 @@ func (w *Worker) RunTask() task.DockerResult {
 		case task.Completed:
 			result = w.StopTask(taskQueued)
 		default:
+			fmt.Printf("This is a mistake. taskPersisted: %v, taskQueued: %v\n", taskPersisted, taskQueued)
 			result.Error = errors.New("We should not get here")
 		}
 	} else {
@@ -74,7 +92,6 @@ func (w *Worker) RunTask() task.DockerResult {
 }
 
 func (w *Worker) StartTask(t task.Task) task.DockerResult {
-	t.StartTime = time.Now().UTC()
 	config := task.NewConfig(&t)
 	d := task.NewDocker(config)
 	result := d.Run()

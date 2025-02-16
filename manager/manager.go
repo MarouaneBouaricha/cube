@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/MarouaneBouaricha/cube/worker"
@@ -56,27 +57,37 @@ func (m *Manager) SelectWorker() string {
 }
 
 func (m *Manager) UpdateTasks() {
+	for {
+		log.Println("Checking for task updates from workers")
+		m.updateTasks()
+		log.Println("Task updates completed")
+		log.Println("Sleeping for 15 seconds")
+		time.Sleep(15 * time.Second)
+	}
+}
+
+func (m *Manager) updateTasks() {
 	for _, worker := range m.Workers {
-		log.Printf("Checking worker %v for task updates\n", worker)
+		log.Printf("Checking worker %v for task updates", worker)
 		url := fmt.Sprintf("http://%s/tasks", worker)
 		resp, err := http.Get(url)
 		if err != nil {
-			log.Printf("Error connecting to %v: %v\n", worker, err)
+			log.Printf("Error connecting to %v: %v", worker, err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			log.Printf("Error sending request: %v\n", err)
+			log.Printf("Error sending request: %v", err)
 		}
 
 		d := json.NewDecoder(resp.Body)
 		var tasks []*task.Task
 		err = d.Decode(&tasks)
 		if err != nil {
-			log.Printf("Error unmarshalling tasks: %s\n", err.Error())
+			log.Printf("Error unmarshalling tasks: %s", err.Error())
 		}
 
 		for _, t := range tasks {
-			log.Printf("Attempting to update task %v\n", t.ID)
+			log.Printf("Attempting to update task %v", t.ID)
 
 			_, ok := m.TaskDb[t.ID]
 			if !ok {
@@ -95,6 +106,15 @@ func (m *Manager) UpdateTasks() {
 	}
 }
 
+func (m *Manager) ProcessTasks() {
+	for {
+		log.Println("Processing any tasks in the queue")
+		m.SendWork()
+		log.Println("Sleeping for 10 seconds")
+		time.Sleep(10 * time.Second)
+	}
+}
+
 func (m *Manager) SendWork() {
 	if m.Pending.Len() > 0 {
 		w := m.SelectWorker()
@@ -102,7 +122,7 @@ func (m *Manager) SendWork() {
 		e := m.Pending.Dequeue()
 		te := e.(task.TaskEvent)
 		t := te.Task
-		log.Printf("Pulled %v off pending queue\n", t)
+		log.Printf("Pulled %v off pending queue", t)
 
 		m.EventDb[te.ID] = &te
 		m.WorkerTaskMap[w] = append(m.WorkerTaskMap[w], te.Task.ID)
@@ -113,14 +133,14 @@ func (m *Manager) SendWork() {
 
 		data, err := json.Marshal(te)
 		if err != nil {
-			log.Printf("Unable to marshal task object: %v.\n", t)
+			log.Printf("Unable to marshal task object: %v.", t)
 		}
 
 		url := fmt.Sprintf("http://%s/tasks", w)
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
 		if err != nil {
-			log.Printf("Error connecting to %v: %v\n", w, err)
-			m.Pending.Enqueue(te)
+			log.Printf("Error connecting to %v: %v", w, err)
+			m.Pending.Enqueue(t)
 			return
 		}
 
@@ -132,7 +152,7 @@ func (m *Manager) SendWork() {
 				fmt.Printf("Error decoding response: %s\n", err.Error())
 				return
 			}
-			log.Printf("Response error (%d): %s\n", e.HTTPStatusCode, e.Message)
+			log.Printf("Response error (%d): %s", e.HTTPStatusCode, e.Message)
 			return
 		}
 
@@ -146,6 +166,14 @@ func (m *Manager) SendWork() {
 	} else {
 		log.Println("No work in the queue")
 	}
+}
+
+func (m *Manager) GetTasks() []*task.Task {
+	tasks := []*task.Task{}
+	for _, t := range m.TaskDb {
+		tasks = append(tasks, t)
+	}
+	return tasks
 }
 
 func (m *Manager) AddTask(te task.TaskEvent) {
