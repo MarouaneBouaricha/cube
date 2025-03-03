@@ -1,12 +1,15 @@
 package task
 
 import (
-	"context"
 	"io"
 	"log"
+	"math"
 	"os"
 	"time"
 
+	"context"
+
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
@@ -15,22 +18,56 @@ import (
 	"github.com/moby/moby/pkg/stdcopy"
 )
 
+type Task struct {
+	ID            uuid.UUID
+	ContainerID   string
+	Name          string
+	State         State
+	Image         string
+	Cpu           float64
+	Memory        int64
+	Disk          int64
+	HostPorts     nat.PortMap
+	ExposedPorts  nat.PortSet
+	PortBindings  map[string]string
+	RestartPolicy container.RestartPolicyMode
+	StartTime     time.Time
+	FinishTime    time.Time
+	HealthCheck   string
+	RestartCount  int
+}
+
+type TaskEvent struct {
+	ID        uuid.UUID
+	State     State
+	Timestamp time.Time
+	Task      Task
+}
+
 // Config struct to hold Docker container config
 type Config struct {
-	Name         string
-	AttachStdin  bool
+	// Name of the task, also used as the container name
+	Name string
+	// AttachStdin boolean which determines if stdin should be attached
+	AttachStdin bool
+	// AttachStdout boolean which determines if stdout should be attached
 	AttachStdout bool
+	// AttachStderr boolean which determines if stderr should be attached
 	AttachStderr bool
+	// ExposedPorts list of ports exposed
 	ExposedPorts nat.PortSet
 	// Cmd to be run inside container (optional)
-	Cmd   []string
+	Cmd []string
+	// Image used to run the container
 	Image string
-	Cpu   float64
+	// Cpu
+	Cpu float64
 	// Memory in MiB
 	Memory int64
 	// Disk in GiB
 	Disk int64
-	Env  []string
+	// Env variables
+	Env []string
 	// RestartPolicy for the container ["", "always", "unless-stopped", "on-failure"]
 	RestartPolicy container.RestartPolicyMode
 }
@@ -45,29 +82,6 @@ func NewConfig(t *Task) *Config {
 		Disk:          t.Disk,
 		RestartPolicy: t.RestartPolicy,
 	}
-}
-
-type Task struct {
-	ID            uuid.UUID
-	ContainerID   string
-	Name          string
-	State         State
-	Image         string
-	Cpu           float64
-	Memory        int64
-	Disk          int64
-	ExposedPorts  nat.PortSet
-	PortBindings  map[string]string
-	RestartPolicy container.RestartPolicyMode
-	StartTime     time.Time
-	FinishTime    time.Time
-}
-
-type TaskEvent struct {
-	ID        uuid.UUID
-	State     State
-	Timestamp time.Time
-	Task      Task
 }
 
 type Docker struct {
@@ -90,6 +104,11 @@ type DockerResult struct {
 	Result      string
 }
 
+type DockerInspectResponse struct {
+	Error     error
+	Container *types.ContainerJSON
+}
+
 func (d *Docker) Run() DockerResult {
 	ctx := context.Background()
 	reader, err := d.Client.ImagePull(ctx, d.Config.Image, image.PullOptions{})
@@ -104,14 +123,8 @@ func (d *Docker) Run() DockerResult {
 	}
 
 	r := container.Resources{
-		Memory: d.Config.Memory,
-	}
-
-	cc := container.Config{
-		Image:        d.Config.Image,
-		Tty:          false,
-		Env:          d.Config.Env,
-		ExposedPorts: d.Config.ExposedPorts,
+		Memory:   d.Config.Memory,
+		NanoCPUs: int64(d.Config.Cpu * math.Pow(10, 9)),
 	}
 
 	hc := container.HostConfig{
@@ -120,13 +133,18 @@ func (d *Docker) Run() DockerResult {
 		PublishAllPorts: true,
 	}
 
-	resp, err := d.Client.ContainerCreate(ctx, &cc, &hc, nil, nil, d.Config.Name)
+	resp, err := d.Client.ContainerCreate(ctx, &container.Config{
+		Image:        d.Config.Image,
+		Tty:          false,
+		Env:          d.Config.Env,
+		ExposedPorts: d.Config.ExposedPorts,
+	}, &hc, nil, nil, d.Config.Name)
 	if err != nil {
 		log.Printf("Error creating container using image %s: %v\n", d.Config.Image, err)
 		return DockerResult{Error: err}
 	}
 
-	if err = d.Client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := d.Client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		log.Printf("Error starting container %s: %v\n", resp.ID, err)
 		return DockerResult{Error: err}
 	}
@@ -151,7 +169,13 @@ func (d *Docker) Stop(id string) DockerResult {
 		return DockerResult{Error: err}
 	}
 
-	err = d.Client.ContainerRemove(ctx, id, container.RemoveOptions{
+	return DockerResult{Action: "stop", Result: "success", Error: nil}
+}
+
+func (d *Docker) Remove(id string) DockerResult {
+	log.Printf("Attempting to delete container %v", id)
+	ctx := context.Background()
+	err := d.Client.ContainerRemove(ctx, id, container.RemoveOptions{
 		RemoveVolumes: true,
 		RemoveLinks:   false,
 		Force:         false,
@@ -160,6 +184,17 @@ func (d *Docker) Stop(id string) DockerResult {
 		log.Printf("Error removing container %s: %v\n", id, err)
 		return DockerResult{Error: err}
 	}
+	return DockerResult{Action: "delete", Result: "success", Error: nil}
+}
 
-	return DockerResult{Action: "stop", Result: "success", Error: nil}
+func (d *Docker) Inspect(containerID string) DockerInspectResponse {
+	dc, _ := client.NewClientWithOpts(client.FromEnv)
+	ctx := context.Background()
+	resp, err := dc.ContainerInspect(ctx, containerID)
+	if err != nil {
+		log.Printf("Error inspecting container: %s\n", err)
+		return DockerInspectResponse{Error: err}
+	}
+	return DockerInspectResponse{Container: &resp}
+
 }
