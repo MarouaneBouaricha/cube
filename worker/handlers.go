@@ -19,7 +19,7 @@ func (a *Api) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&te)
 	if err != nil {
 		msg := fmt.Sprintf("Error unmarshalling body: %v\n", err)
-		log.Printf(msg)
+		log.Print(msg)
 		w.WriteHeader(400)
 		e := ErrResponse{
 			HTTPStatusCode: 400,
@@ -62,14 +62,14 @@ func (a *Api) InspectTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tID, _ := uuid.Parse(taskID)
-	t, ok := a.Worker.Db[tID]
-	if !ok {
+	t, err := a.Worker.Db.Get(tID.String())
+	if err != nil {
 		log.Printf("No task with ID %v found", tID)
 		w.WriteHeader(404)
 		return
 	}
 
-	resp := a.Worker.InspectTask(*t)
+	resp := a.Worker.InspectTask(t.(task.Task))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -85,16 +85,17 @@ func (a *Api) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tID, _ := uuid.Parse(taskID)
-	taskToStop, ok := a.Worker.Db[tID]
-	if !ok {
+	taskToStop, err := a.Worker.Db.Get(tID.String())
+	if err != nil {
 		log.Printf("No task with ID %v found", tID)
 		w.WriteHeader(404)
 	}
 
-	taskCopy := *taskToStop
+	// we need to make a copy so we are not modifying the task in the datastore
+	taskCopy := *taskToStop.(*task.Task)
 	taskCopy.State = task.Completed
 	a.Worker.AddTask(taskCopy)
 
-	log.Printf("Added task %v to stop container %v\n", taskToStop.ID, taskToStop.ContainerID)
+	log.Printf("Added task %v to stop container %v\n", taskCopy.ID.String(), taskCopy.ContainerID)
 	w.WriteHeader(204)
 }
