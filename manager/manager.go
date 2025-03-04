@@ -165,6 +165,19 @@ func (m *Manager) updateTasks() {
 	}
 }
 
+func (m *Manager) UpdateNodeStats() {
+	for {
+		for _, node := range m.WorkerNodes {
+			log.Printf("Collecting stats for node %v", node.Name)
+			_, err := node.GetStats()
+			if err != nil {
+				log.Printf("error updating node stats: %v", err)
+			}
+		}
+		time.Sleep(15 * time.Second)
+	}
+}
+
 func (m *Manager) DoHealthChecks() {
 	for {
 		log.Println("Performing task health check")

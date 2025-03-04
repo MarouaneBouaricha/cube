@@ -28,6 +28,9 @@ func (a *Api) initRouter() {
 			r.Delete("/", a.StopTaskHandler)
 		})
 	})
+	a.Router.Route("/nodes", func(r chi.Router) {
+		r.Get("/", a.GetNodesHandler)
+	})
 }
 
 func (a *Api) Start() {
