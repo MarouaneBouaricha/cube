@@ -6,17 +6,17 @@ import (
 	"log"
 	"time"
 
+	"github.com/MarouaneBouaricha/cube/stats"
+	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
-
-	"github.com/MarouaneBouaricha/cube/task"
 )
 
 type Worker struct {
 	Name      string
 	Queue     queue.Queue
 	Db        map[uuid.UUID]*task.Task
-	Stats     *Stats
+	Stats     *stats.Stats
 	TaskCount int
 }
 
@@ -31,7 +31,7 @@ func (w *Worker) GetTasks() []*task.Task {
 func (w *Worker) CollectStats() {
 	for {
 		log.Println("Collecting stats")
-		w.Stats = GetStats()
+		w.Stats = stats.GetStats()
 		w.TaskCount = w.Stats.TaskCount
 		time.Sleep(15 * time.Second)
 	}
@@ -60,12 +60,12 @@ func (w *Worker) RunTasks() {
 func (w *Worker) runTask() task.DockerResult {
 	t := w.Queue.Dequeue()
 	if t == nil {
-		log.Println("No tasks in the queue")
+		log.Println("[worker] No tasks in the queue")
 		return task.DockerResult{Error: nil}
 	}
 
 	taskQueued := t.(task.Task)
-	fmt.Printf("Found task in queue: %v:\n", taskQueued)
+	fmt.Printf("[worker] Found task in queue: %v:\n", taskQueued)
 
 	taskPersisted := w.Db[taskQueued.ID]
 	if taskPersisted == nil {
@@ -88,10 +88,10 @@ func (w *Worker) runTask() task.DockerResult {
 			result = w.StopTask(taskQueued)
 		default:
 			fmt.Printf("This is a mistake. taskPersisted: %v, taskQueued: %v\n", taskPersisted, taskQueued)
-			result.Error = errors.New("We should not get here")
+			result.Error = errors.New("we should not get here")
 		}
 	} else {
-		err := fmt.Errorf("Invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
+		err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
 		result.Error = err
 		return result
 	}
@@ -158,16 +158,16 @@ func (w *Worker) updateTasks() {
 		if t.State == task.Running {
 			resp := w.InspectTask(*t)
 			if resp.Error != nil {
-				fmt.Printf("ERROR: %v\n", resp.Error)
+				fmt.Printf("ERROR: %v", resp.Error)
 			}
 
 			if resp.Container == nil {
-				log.Printf("No container for running task %s\n", id)
+				log.Printf("No container for running task %s", id)
 				w.Db[id].State = task.Failed
 			}
 
 			if resp.Container.State.Status == "exited" {
-				log.Printf("Container for task %s in non-running state %s\n", id, resp.Container.State.Status)
+				log.Printf("Container for task %s in non-running state %s", id, resp.Container.State.Status)
 				w.Db[id].State = task.Failed
 			}
 
