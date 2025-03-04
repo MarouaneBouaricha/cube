@@ -13,7 +13,7 @@ type Epvm struct {
 	Name string
 }
 
-func SelectCandidateNodes(t task.Task, nodes []*node.Node) []*node.Node {
+func (e *Epvm) SelectCandidateNodes(t task.Task, nodes []*node.Node) []*node.Node {
 	var candidates []*node.Node
 	for node := range nodes {
 
