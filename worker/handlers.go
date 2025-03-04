@@ -91,7 +91,6 @@ func (a *Api) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 	}
 
-	// we need to make a copy so we are not modifying the task in the datastore
 	taskCopy := *taskToStop.(*task.Task)
 	taskCopy.State = task.Completed
 	a.Worker.AddTask(taskCopy)
