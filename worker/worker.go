@@ -98,14 +98,14 @@ func (w *Worker) runTask() task.DockerResult {
 		return task.DockerResult{Error: msg}
 	}
 
-	result, err := w.Db.Get(taskQueued.ID.String())
+	queuedTask, err := w.Db.Get(taskQueued.ID.String())
 	if err != nil {
 		msg := fmt.Errorf("error getting task %s from database: %v", taskQueued.ID.String(), err)
 		log.Println(msg)
 		return task.DockerResult{Error: msg}
 	}
 
-	taskPersisted := *result.(*task.Task)
+	taskPersisted := *queuedTask.(*task.Task)
 
 	if taskPersisted.State == task.Completed {
 		return w.StopTask(taskPersisted)
@@ -122,6 +122,8 @@ func (w *Worker) runTask() task.DockerResult {
 				}
 			}
 			dockerResult = w.StartTask(taskQueued)
+		case task.Completed:
+			dockerResult = w.StopTask(taskQueued)
 		default:
 			fmt.Printf("This is a mistake. taskPersisted: %v, taskQueued: %v\n", taskPersisted, taskQueued)
 			dockerResult.Error = errors.New("we should not get here")
