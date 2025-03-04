@@ -66,10 +66,22 @@ func New(workers []string, schedulerType string, dbType string) *Manager {
 
 	var ts store.Store
 	var es store.Store
+	var err error
 	switch dbType {
 	case "memory":
 		ts = store.NewInMemoryTaskStore()
 		es = store.NewInMemoryTaskEventStore()
+	case "persistent":
+		ts, err = store.NewTaskStore("tasks.db", 0600, "tasks")
+		es, err = store.NewEventStore("events.db", 0600, "events")
+	}
+
+	if err != nil {
+		log.Fatalf("unable to create task store: %v", err)
+	}
+
+	if err != nil {
+		log.Fatalf("unable to create task event store: %v", err)
 	}
 
 	m.TaskDb = ts
