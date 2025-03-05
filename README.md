@@ -49,7 +49,7 @@ Flags:
 ```
 
 ## Worker
-
+```shell
 cube worker command.
 
 The worker runs tasks and responds to the manager's requests about task state.
@@ -63,6 +63,7 @@ Flags:
   -H, --host string     Hostname or IP address (default "0.0.0.0")
   -n, --name string     Name of the worker (default "worker-b6d6dd7d-e236-4c6a-b390-8c63a6245590")
   -p, --port int        Port on which to listen (default 5556)
+```
 
 ## Run Tasks
 ```shell
