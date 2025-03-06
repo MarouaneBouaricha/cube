@@ -2,6 +2,7 @@
 Orchestrator from scratch
 
 ## Architecture
+![Orchestrator System Architecture](https://github.com/MarouaneBouaricha/cube/blob/main/ochestrator_sytem_arch.png?raw=true)
 
 ## How To
 ```shell
@@ -27,87 +28,60 @@ Flags:
 ```
 
 ## Manager
+Run a manager instance and passing a list of workers.
 ```shell
-cube manager command.
-
-The manager controls the orchestration system and is responsible for:
-- Accepting tasks from users
-- Scheduling tasks onto worker nodes
-- Rescheduling tasks in the event of a node failure
-- Periodically polling workers to get task updates
-
-Usage:
-  cube manager [flags]
-
-Flags:
-  -d, --dbType string      Type of datastore to use for events and tasks ("memory" or "persistent") (default "memory")
-  -h, --help               help for manager
-  -H, --host string        Hostname or IP address (default "0.0.0.0")
-  -p, --port int           Port on which to listen (default 5555)
-  -s, --scheduler string   Name of scheduler to use. (default "epvm")
-  -w, --workers strings    List of workers on which the manager will schedule tasks. (default [localhost:5556])
+cube manager --workers 'worker-1:5556,worker-2:5557'
 ```
 
 ## Worker
+Run an instance of a worker
 ```shell
-cube worker command.
-
-The worker runs tasks and responds to the manager's requests about task state.
-
-Usage:
-  cube worker [flags]
-
-Flags:
-  -d, --dbtype string   Type of datastore to use for tasks ("memory" or "persistent") (default "memory")
-  -h, --help            help for worker
-  -H, --host string     Hostname or IP address (default "0.0.0.0")
-  -n, --name string     Name of the worker (default "worker-b6d6dd7d-e236-4c6a-b390-8c63a6245590")
-  -p, --port int        Port on which to listen (default 5556)
+cube worker --name worker-2 --port 5557
 ```
 
 ## Run Tasks
+Run a task using a json file
+```json
+{
+  "ID": "a7aa1d44-08f6-443e-9378-f5884311019e",
+  "State": 2,
+  "Task": {
+    "State": 1,
+    "ID": "bb1d59ef-9fc1-4e4b-a44d-db571eeed203",
+    "Name": "test-chapter-9.1",
+    "Image": "timboring/echo-server:latest",
+    "ExposedPorts": {
+      "7777/tcp": {}
+    },
+    "PortBindings": {
+      "7777/tcp": "7777"
+    },
+    "HealthCheck": "/health"
+  }
+}
+```
 ```shell
-cube run command.
-
-The run command starts a new task.
-
-Usage:
-  cube run [flags]
-
-Flags:
-  -f, --filename string   Task specification file (default "task.json")
-  -h, --help              help for run
-  -m, --manager string    Manager to talk to (default "localhost:5555")
+cube run -f task.json --manager manager:5555
 ```
 
-### List Nodes
+### List workers
 ```shell
-cube node command.
-
-The node command allows a user to get the information about the nodes in the cluster.
-
-Usage:
-  cube node [flags]
-
-Flags:
-  -h, --help             help for node
-  -m, --manager string   Manager to talk to (default "localhost:5555")
+cube node
 ```
 ```shell
 NAME               MEMORY (MiB)     DISK (GiB)     ROLE       TASKS     
-localhost:5556     15684            467            worker     0         
-localhost:5557     15684            467            worker     0
+worker-1:5556      15684            467            worker     4         
+worker-2:5557      15684            467            worker     2
 ```
 ### List running tasks
 ```shell
-cube status command.
-
-The status command allows a user to get the status of tasks from the Cube manager.
-
-Usage:
-  cube status [flags]
-
-Flags:
-  -h, --help             help for status
-  -m, --manager string   Manager to talk to (default "localhost:5555")
+cube status
+```
+```shell
+ID                 NAME                 CREATED                    STATE         CONTAINERNAME        IMAGE                            
+bb1d59ef           test-chapter-9.1     Less than a second ago     Scheduled     test-chapter-9.1     timboring/echo-server:latest
+```
+```shell
+ID                 NAME                 CREATED                    STATE         CONTAINERNAME        IMAGE                            
+bb1d59ef           test-chapter-9.1     2 minutes ago              Running       test-chapter-9.1     timboring/echo-server:latest
 ```
