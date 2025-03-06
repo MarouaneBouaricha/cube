@@ -2,7 +2,7 @@
 Orchestrator from scratch
 
 ## Architecture
-![Orchestrator System Architecture](https://github.com/MarouaneBouaricha/cube/blob/main/ochestrator_sytem_arch.png?raw=true)
+![Orchestrator System Architecture](architecture/ochestrator_system_arch.png)
 
 ## How To
 ```shell
