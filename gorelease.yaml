@@ -4,7 +4,6 @@ builds:
     main: ./
     goos:
       - linux
-      - windows
       - darwin
     goarch:
       - amd64
