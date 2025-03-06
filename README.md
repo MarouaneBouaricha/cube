@@ -16,12 +16,13 @@ Orchestrator from scratch.
 
 ## Tech Stack
 - Go 1.23.2
+- Docker SDK
 - [bbolt](https://github.com/etcd-io/bbolt) as an embedded Key/value datastore.
 
 ## Scheduler
 The implementation provides two types of scheduling :
 - Roundrobin
-- EPVM (Extended Parallel VM) adapated for this small ochestrator.
+- EPVM (Extended Parallel VM) adapated for this small orchestrator.
 
 ## How To
 ```shell
