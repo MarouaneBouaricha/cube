@@ -1,8 +1,27 @@
 # Cube
-Orchestrator from scratch
+Orchestrator from scratch.
+- Users interact with the system via manager's API.
+- The manager persists all tasks in the system datastore.
+- The manager maintains a list of workers in the system and metrics about each worker.
+- The manager uses a scheduler to calculate where it should place the task.
+- The manager sends tasks to the worker and pull metrics from it via the worker's API. 
+- The worker persists it's own tasks in a datastore
+- The worker makes metrics about its tasks and other relevant system metrics available to the manager.
+
+> [!WARNING]  
+> A self maded orchestrator for educational purposes which is not ready for production.
 
 ## Architecture
 ![Orchestrator System Architecture](architecture/ochestrator_system_arch.png)
+
+## Tech Stack
+- Go 1.23.2
+- [bbolt](https://github.com/etcd-io/bbolt) as an embedded Key/value datastore.
+
+## Scheduler
+The implementation provides two types of scheduling :
+- Roundrobin
+- EPVM (Extended Parallel VM)
 
 ## How To
 ```shell
