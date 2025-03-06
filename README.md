@@ -21,7 +21,7 @@ Orchestrator from scratch.
 ## Scheduler
 The implementation provides two types of scheduling :
 - Roundrobin
-- EPVM (Extended Parallel VM)
+- EPVM (Extended Parallel VM) adapated for this small ochestrator.
 
 ## How To
 ```shell
