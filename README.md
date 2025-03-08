@@ -46,6 +46,18 @@ Available Commands:
 Flags:
   -h, --help   help for cube
 ```
+## Installation
+Download the latest binary release.
+### Linux
+```shell
+LATEST_RELEASE=$(curl -s https://api.github.com/repos/MarouaneBouaricha/cube/releases/latest | grep "browser_download_url" | grep "linux_amd64.tar.gz" | cut -d '"' -f 4)
+curl -LO $LATEST_RELEASE
+```
+### Darwin
+```shell
+LATEST_RELEASE=$(curl -s https://api.github.com/repos/MarouaneBouaricha/cube/releases/latest | grep "browser_download_url" | grep "darwin_all4.tar.gz" | cut -d '"' -f 4)
+curl -LO $LATEST_RELEASE
+```
 
 ## Manager
 Run a manager instance and passing a list of workers.
