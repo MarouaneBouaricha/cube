@@ -15,6 +15,7 @@ func init() {
 	workerCmd.Flags().IntP("port", "p", 5556, "Port on which to listen")
 	workerCmd.Flags().StringP("name", "n", fmt.Sprintf("worker-%s", uuid.New().String()), "Name of the worker")
 	workerCmd.Flags().StringP("dbtype", "d", "memory", "Type of datastore to use for tasks (\"memory\" or \"persistent\")")
+	workerCmd.Flags().StringP("runtime", "r", "docker", "Container Runtime to use for tasks (\"docker\" or \"podman\")")
 }
 
 var workerCmd = &cobra.Command{
@@ -28,9 +29,10 @@ The worker runs tasks and responds to the manager's requests about task state.`,
 		port, _ := cmd.Flags().GetInt("port")
 		name, _ := cmd.Flags().GetString("name")
 		dbType, _ := cmd.Flags().GetString("dbtype")
+		container_runtime, _ := cmd.Flags().GetString("runtime")
 
 		log.Println("Starting worker.")
-		w := worker.New(name, dbType)
+		w := worker.New(name, dbType, container_runtime)
 		api := worker.Api{Address: host, Port: port, Worker: w}
 		go w.RunTasks()
 		go w.CollectStats()
