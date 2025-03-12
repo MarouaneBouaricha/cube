@@ -12,15 +12,24 @@ import (
 	"github.com/golang-collections/collections/queue"
 )
 
+type Status int
+
+const (
+	Ready Status = iota
+	NotReady
+)
+
 type Worker struct {
-	Name      string
-	Queue     queue.Queue
-	Db        store.Store
-	Stats     *stats.Stats
-	TaskCount int
+	Name             string
+	Queue            queue.Queue
+	Db               store.Store
+	Stats            *stats.Stats
+	TaskCount        int
+	Status           Status
+	ContainerRuntime task.ContainerRuntime
 }
 
-func New(name string, taskDbType string) *Worker {
+func New(name string, taskDbType string, containerRuntime string) *Worker {
 	w := Worker{
 		Name:  name,
 		Queue: *queue.New(),
@@ -36,7 +45,16 @@ func New(name string, taskDbType string) *Worker {
 		s, err = store.NewTaskStore(filename, 0600, "tasks")
 	}
 	if err != nil {
-		log.Printf("eunable to create new task store: %v", err)
+		log.Printf("unable to create new task store: %v", err)
+	}
+
+	switch containerRuntime {
+	case "docker":
+		err = task.DaemonHealthCheck()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Docker is Running!")
 	}
 	w.Db = s
 	return &w
@@ -81,11 +99,11 @@ func (w *Worker) RunTasks() {
 
 }
 
-func (w *Worker) runTask() task.DockerResult {
+func (w *Worker) runTask() task.ContainerResult {
 	t := w.Queue.Dequeue()
 	if t == nil {
 		log.Println("[worker] No tasks in the queue")
-		return task.DockerResult{Error: nil}
+		return task.ContainerResult{Error: nil}
 	}
 
 	taskQueued := t.(task.Task)
@@ -95,14 +113,14 @@ func (w *Worker) runTask() task.DockerResult {
 	if err != nil {
 		msg := fmt.Errorf("error storing task %s: %v", taskQueued.ID.String(), err)
 		log.Println(msg)
-		return task.DockerResult{Error: msg}
+		return task.ContainerResult{Error: msg}
 	}
 
 	queuedTask, err := w.Db.Get(taskQueued.ID.String())
 	if err != nil {
 		msg := fmt.Errorf("error getting task %s from database: %v", taskQueued.ID.String(), err)
 		log.Println(msg)
-		return task.DockerResult{Error: msg}
+		return task.ContainerResult{Error: msg}
 	}
 
 	taskPersisted := *queuedTask.(*task.Task)
@@ -111,35 +129,35 @@ func (w *Worker) runTask() task.DockerResult {
 		return w.StopTask(taskPersisted)
 	}
 
-	var dockerResult task.DockerResult
+	var containerResult task.ContainerResult
 	if task.ValidStateTransition(taskPersisted.State, taskQueued.State) {
 		switch taskQueued.State {
 		case task.Scheduled:
 			if taskQueued.ContainerID != "" {
-				dockerResult = w.StopTask(taskQueued)
-				if dockerResult.Error != nil {
-					log.Printf("%v\n", dockerResult.Error)
+				containerResult = w.StopTask(taskQueued)
+				if containerResult.Error != nil {
+					log.Printf("%v\n", containerResult.Error)
 				}
 			}
-			dockerResult = w.StartTask(taskQueued)
+			containerResult = w.StartTask(taskQueued)
 		case task.Completed:
-			dockerResult = w.StopTask(taskQueued)
+			containerResult = w.StopTask(taskQueued)
 		default:
 			fmt.Printf("This is a mistake. taskPersisted: %v, taskQueued: %v\n", taskPersisted, taskQueued)
-			dockerResult.Error = errors.New("we should not get here")
+			containerResult.Error = errors.New("we should not get here")
 		}
 	} else {
 		err := fmt.Errorf("invalid transition from %v to %v", taskPersisted.State, taskQueued.State)
-		dockerResult.Error = err
-		return dockerResult
+		containerResult.Error = err
+		return containerResult
 	}
-	return dockerResult
+	return containerResult
 }
 
-func (w *Worker) StartTask(t task.Task) task.DockerResult {
+func (w *Worker) StartTask(t task.Task) task.ContainerResult {
 	config := task.NewConfig(&t)
-	d := task.NewDocker(config)
-	result := d.Run()
+	w.ContainerRuntime = task.NewDocker(config)
+	result := w.ContainerRuntime.Run()
 	if result.Error != nil {
 		log.Printf("Err running task %v: %v\n", t.ID, result.Error)
 		t.State = task.Failed
@@ -154,15 +172,15 @@ func (w *Worker) StartTask(t task.Task) task.DockerResult {
 	return result
 }
 
-func (w *Worker) StopTask(t task.Task) task.DockerResult {
+func (w *Worker) StopTask(t task.Task) task.ContainerResult {
 	config := task.NewConfig(&t)
-	d := task.NewDocker(config)
+	w.ContainerRuntime = task.NewDocker(config)
 
-	stopResult := d.Stop(t.ContainerID)
+	stopResult := w.ContainerRuntime.Stop(t.ContainerID)
 	if stopResult.Error != nil {
 		log.Printf("%v\n", stopResult.Error)
 	}
-	removeResult := d.Remove(t.ContainerID)
+	removeResult := w.ContainerRuntime.Remove(t.ContainerID)
 	if removeResult.Error != nil {
 		log.Printf("%v\n", removeResult.Error)
 	}
@@ -175,10 +193,10 @@ func (w *Worker) StopTask(t task.Task) task.DockerResult {
 	return removeResult
 }
 
-func (w *Worker) InspectTask(t task.Task) task.DockerInspectResponse {
+func (w *Worker) InspectTask(t task.Task) task.ContainerInspectResponse {
 	config := task.NewConfig(&t)
-	d := task.NewDocker(config)
-	return d.Inspect(t.ContainerID)
+	w.ContainerRuntime = task.NewDocker(config)
+	return w.ContainerRuntime.Inspect(t.ContainerID)
 }
 
 func (w *Worker) UpdateTasks() {
