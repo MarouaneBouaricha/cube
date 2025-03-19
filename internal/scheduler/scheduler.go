@@ -1,8 +1,8 @@
 package scheduler
 
 import (
-	"github.com/MarouaneBouaricha/cube/node"
-	"github.com/MarouaneBouaricha/cube/task"
+	"github.com/MarouaneBouaricha/cube/api/node"
+	"github.com/MarouaneBouaricha/cube/internal/task"
 )
 
 const (

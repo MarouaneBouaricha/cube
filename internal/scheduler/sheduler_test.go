@@ -1,10 +1,10 @@
 package scheduler
 
 import (
+	"github.com/MarouaneBouaricha/cube/api/node"
+	"github.com/MarouaneBouaricha/cube/internal/task"
 	"testing"
 
-	"github.com/MarouaneBouaricha/cube/node"
-	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/google/go-cmp/cmp"
 )
 

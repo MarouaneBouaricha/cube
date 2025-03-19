@@ -1,9 +1,9 @@
-package cmd
+package cli
 
 import (
+	manager2 "github.com/MarouaneBouaricha/cube/internal/manager"
 	"log"
 
-	"github.com/MarouaneBouaricha/cube/manager"
 	"github.com/spf13/cobra"
 )
 
@@ -34,8 +34,8 @@ The manager controls the orchestration system and is responsible for:
 		dbType, _ := cmd.Flags().GetString("dbType")
 
 		log.Println("Starting manager.")
-		m := manager.New(workers, scheduler, dbType)
-		api := manager.Api{Address: host, Port: port, Manager: m}
+		m := manager2.New(workers, scheduler, dbType)
+		api := manager2.Api{Address: host, Port: port, Manager: m}
 		go m.ProcessTasks()
 		go m.UpdateTasks()
 		go m.DoHealthChecks()

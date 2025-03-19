@@ -1,10 +1,10 @@
-package cmd
+package cli
 
 import (
 	"fmt"
+	worker2 "github.com/MarouaneBouaricha/cube/internal/worker"
 	"log"
 
-	"github.com/MarouaneBouaricha/cube/worker"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
@@ -32,8 +32,8 @@ The worker runs tasks and responds to the manager's requests about task state.`,
 		container_runtime, _ := cmd.Flags().GetString("runtime")
 
 		log.Println("Starting worker.")
-		w := worker.New(name, dbType, container_runtime)
-		api := worker.Api{Address: host, Port: port, Worker: w}
+		w := worker2.New(name, dbType, container_runtime)
+		api := worker2.Api{Address: host, Port: port, Worker: w}
 		go w.RunTasks()
 		go w.CollectStats()
 		go w.UpdateTasks()

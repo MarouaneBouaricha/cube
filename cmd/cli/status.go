@@ -1,8 +1,9 @@
-package cmd
+package cli
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MarouaneBouaricha/cube/internal/task"
 	"io"
 	"log"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 )

@@ -1,15 +1,15 @@
-package cmd
+package cli
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MarouaneBouaricha/cube/api/node"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"text/tabwriter"
 
-	"github.com/MarouaneBouaricha/cube/node"
 	"github.com/spf13/cobra"
 )
 

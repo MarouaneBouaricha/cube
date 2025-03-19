@@ -3,10 +3,10 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MarouaneBouaricha/cube/internal/task"
 	"log"
 	"os"
 
-	"github.com/MarouaneBouaricha/cube/task"
 	bolt "go.etcd.io/bbolt"
 )
 

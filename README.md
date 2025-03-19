@@ -12,7 +12,7 @@ Orchestrator from scratch.
 > A self maded orchestrator for educational purposes which is not ready for production.
 
 ## Architecture
-![Orchestrator System Architecture](architecture/ochestrator_system_arch.png)
+![Orchestrator System Architecture](assets/ochestrator_system_arch.png)
 
 ## Tech Stack
 - Go 1.23.2

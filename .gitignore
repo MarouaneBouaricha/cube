@@ -28,3 +28,6 @@ go.work.sum
 #db and test requests
 *.db
 *.json
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/workspace.xml

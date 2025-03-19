@@ -3,11 +3,11 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MarouaneBouaricha/cube/api/stats"
+	task2 "github.com/MarouaneBouaricha/cube/internal/task"
 	"log"
 	"net/http"
 
-	"github.com/MarouaneBouaricha/cube/stats"
-	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -15,7 +15,7 @@ import (
 func (a *Api) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 
-	te := task.TaskEvent{}
+	te := task2.TaskEvent{}
 	err := d.Decode(&te)
 	if err != nil {
 		msg := fmt.Sprintf("Error unmarshalling body: %v\n", err)
@@ -69,7 +69,7 @@ func (a *Api) InspectTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := a.Worker.InspectTask(t.(task.Task))
+	resp := a.Worker.InspectTask(t.(task2.Task))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -91,8 +91,8 @@ func (a *Api) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 	}
 
-	taskCopy := *taskToStop.(*task.Task)
-	taskCopy.State = task.Completed
+	taskCopy := *taskToStop.(*task2.Task)
+	taskCopy.State = task2.Completed
 	a.Worker.AddTask(taskCopy)
 
 	log.Printf("Added task %v to stop container %v\n", taskCopy.ID.String(), taskCopy.ContainerID)

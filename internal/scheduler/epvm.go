@@ -1,12 +1,11 @@
 package scheduler
 
 import (
+	"github.com/MarouaneBouaricha/cube/api/node"
+	"github.com/MarouaneBouaricha/cube/internal/task"
 	"log"
 	"math"
 	"time"
-
-	"github.com/MarouaneBouaricha/cube/node"
-	"github.com/MarouaneBouaricha/cube/task"
 )
 
 type Epvm struct {

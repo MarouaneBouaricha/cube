@@ -1,11 +1,9 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 */
-package cmd
+package cli
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -17,9 +15,9 @@ var rootCmd = &cobra.Command{
 Cube is an orchestrator based on containers.`,
 }
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+func Execute() error {
+	if err := rootCmd.Execute(); err != nil {
+		return err
 	}
+	return nil
 }
