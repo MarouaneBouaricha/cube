@@ -2,8 +2,7 @@ package store
 
 import (
 	"fmt"
-
-	"github.com/MarouaneBouaricha/cube/task"
+	"github.com/MarouaneBouaricha/cube/internal/task"
 )
 
 // Task store

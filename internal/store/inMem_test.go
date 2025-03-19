@@ -1,10 +1,10 @@
 package store
 
 import (
+	"github.com/MarouaneBouaricha/cube/internal/task"
 	"testing"
 	"time"
 
-	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/google/uuid"
 )
 

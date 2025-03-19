@@ -3,11 +3,11 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
+	task2 "github.com/MarouaneBouaricha/cube/internal/task"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/MarouaneBouaricha/cube/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -16,7 +16,7 @@ func (a *Api) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 
-	te := task.TaskEvent{}
+	te := task2.TaskEvent{}
 	err := d.Decode(&te)
 	if err != nil {
 		msg := fmt.Sprintf("Error unmarshalling body: %v\n", err)
@@ -57,12 +57,12 @@ func (a *Api) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	te := task.TaskEvent{
+	te := task2.TaskEvent{
 		ID:        uuid.New(),
-		State:     task.Completed,
+		State:     task2.Completed,
 		Timestamp: time.Now(),
 	}
-	taskCopy := taskToStop.(*task.Task)
+	taskCopy := taskToStop.(*task2.Task)
 	te.Task = *taskCopy
 	a.Manager.AddTask(te)
 

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MarouaneBouaricha/cube/api/stats"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/MarouaneBouaricha/cube/stats"
 	"github.com/MarouaneBouaricha/cube/utils"
 )
 
